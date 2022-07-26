@@ -10,7 +10,8 @@
 
 class Numeric {
 public:
-    static float Clamp(float val, float a, float b) {
+    template<typename T>
+    static float Clamp(T val, T a, T b) {
         if (val < a) return a;
         else if (val > b) return b;
         else return val;

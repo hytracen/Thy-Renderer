@@ -22,7 +22,7 @@
 //}
 
 template<typename T, int m, int n>
-class Matrix {
+class Matrix{
 public:
     Matrix() = default;
 
@@ -34,6 +34,23 @@ public:
                 data_.at(i).at(j) = *(list.begin() + (n * i + j));
             }
         }
+    }
+
+    Matrix<T,m,n>& operator=(Matrix<T,m,n> mat) {
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                data_.at(i).at(j) = mat.data_.at(i).at(j);
+            }
+        }
+        return *this;
+    }
+
+    static Matrix<T, m, m> Identity() {
+        Matrix<T, m, m> mat{};
+        for (int i = 0; i < m; ++i) {
+            mat.data_.at(i).at(i) = 1;
+        }
+        return mat;
     }
 
     T GetLen() {
@@ -82,25 +99,6 @@ public:
         data_.at(3).at(0) = val;
     }
 
-//    T &X() {
-//        static_assert(m >= 1 && n == 1, "Not a valid vector");
-//        return data_.at(0).at(0);
-//    }
-//
-//    T &Y() {
-//        static_assert(m >= 2 && n == 1, "Not a valid vector");
-//        return data_.at(1).at(0);
-//    }
-//
-//    T &Z() {
-//        static_assert(m >= 3 && n == 1, "Not a valid vector");
-//        return data_.at(2).at(0);
-//    }
-//
-//    T &W() {
-//        static_assert(m >= 4 && n == 1, "Not a valid vector");
-//        return data_.at(3).at(0);
-//    }
 
     const std::array<std::array<T, n>, m> &GetData() const { return data_; }
 
@@ -109,7 +107,14 @@ public:
         data_.at(i).at(j) = val;
     }
 
-    std::array<std::array<T, n>, m> &Data() const { return data_; }
+    Matrix<T, 4, 1> GetHomoCoordinate(int type) {
+        assert(m == 3 && n == 1 && type >= 1 && type <= 2);
+        Matrix<T, 4, 1> homo_m = {0.f,0.f,0.f,(T)type};
+        for (int i = 0; i < 3; ++i) {
+            homo_m.SetData(i, 0, data_.at(i).at(0));
+        }
+        return homo_m;
+    }
 
 private:
     std::array<std::array<T, n>, m> data_;
@@ -135,6 +140,17 @@ Matrix<T, m, n> operator-(const Matrix<T, m, n> &lm, const Matrix<T, m, n> &rm) 
     return result_m;
 }
 
+template<typename T, int m, int n>
+Matrix<T, m, n> operator-(const Matrix<T, m, n> &mat) {
+    Matrix<T, m, n> result_m;
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            result_m.SetData(i, j, -mat.GetData().at(i).at(j));
+        }
+    }
+    return result_m;
+}
+
 template<typename T, int m, int n, int t>
 Matrix<T, m, t> operator*(const Matrix<T, m, n> &lm, const Matrix<T, n, t> &rm) {
     Matrix<T, m, t> result_m;
@@ -145,6 +161,17 @@ Matrix<T, m, t> operator*(const Matrix<T, m, n> &lm, const Matrix<T, n, t> &rm) 
                 ij_val += lm.GetData().at(i).at(k) * rm.GetData().at(k).at(j);
             }
             result_m.SetData(i, j, ij_val);
+        }
+    }
+    return result_m;
+}
+
+template<typename T, int m, int n>
+Matrix<T, m, n> operator*(const Matrix<T, m, n> &mat, T val) {
+    Matrix<T, m, n> result_m;
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            result_m.SetData(i, j, mat.GetData().at(i).at(j) * val);
         }
     }
     return result_m;

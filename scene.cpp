@@ -4,46 +4,58 @@
 
 #include "scene.h"
 
-Scene::Scene() {}
+Scene::Scene(int width, int height) : width_(width), height_(height) {
+    frame_buffer_ = std::vector(height_, std::vector<Vector3f>(width_, Vector3f()));
+    z_buffer = std::vector<float>(width_ * height_, std::numeric_limits<float>::lowest());
+}
 
 void Scene::AddTri(Triangle *triangle) {
     triangles_.push_back(triangle);
-    z_buffer.fill(std::numeric_limits<float>::lowest());
 }
 
-void Scene::Render(std::vector<std::vector<Vector3f>> &frame_buffer) {
-    for (auto t: triangles_) {
-        Vector3f look_from{0.f, 0.f, 5.f};
-        float fov = 45.f;
-        float aspect_ratio = 1.f;
-        float near = -0.1f;
-        float far = -50.f;
-        float top = std::fabs(near) * tanf(fov / 180.f * (float) M_PI);
-        float right = top * aspect_ratio;
-        float left = -right;
-        float bottom = -top;
+void Scene::Clear() {
+    for (int i = 0; i < height_; ++i) {
+        for (int j = 0; j < width_; ++j) {
+            frame_buffer_.at(i).at(j) = Vector3f{};
+            z_buffer.at(i * width_ + j) = std::numeric_limits<float>::lowest();
+        }
+    }
+    camera_->SetModelMat(Matrix4f::Identity());
+}
 
-        Matrix4f m_camera = {1.f, 0.f, 0.f, -look_from.GetX(),
-                             0.f, 1.f, 0.f, -look_from.GetY(),
-                             0.f, 0.f, 1.f, -look_from.GetZ(),
-                             0.f, 0.f, 0.f, 1.f};
-        Matrix4f m_proj = {2.f * near / (right - left), 0.f, (left + right) / (left - right), 0.f,
-                           0.f, 2 * near / (top - bottom), (bottom + top) / (bottom - top), 0.f,
-                           0.f, 0.f, (far + near) / (near - far), 2 * far * near / (far - near),
-                           0.f, 0.f, 1.f, 0.f};
+void Scene::ProcessInput(const int &pressed_key) {
+    float radian = 10.f / 180.f * (float) M_PI;
+    switch (pressed_key) {
+        case 'd': {
+            camera_->SetModelMat({cosf(radian), -sinf(radian), 0.f, 0.f,
+                                  sinf(radian), cosf(radian), 0.f, 0.f,
+                                  0.f, 0.f, 1.f, 0.f,
+                                  0.f, 0.f, 0.f, 1.f});
+        }
+            break;
+        case 'a': {
+            camera_->SetModelMat({cosf(-radian), -sinf(-radian), 0.f, 0.f,
+                                  sinf(-radian), cosf(-radian), 0.f, 0.f,
+                                  0.f, 0.f, 1.f, 0.f,
+                                  0.f, 0.f, 0.f, 1.f});
+        }
+            break;
+        case 27: {
+            exit(-1);
+        }
+            break;
+        default:
+            break;
+    }
+}
 
-        Matrix4f m_viewport = {(float) kWidth / 2, 0.f, 0.f, (float) kWidth / 2,
-                               0.f, (float) kHeight / 2, 0.f, (float) kHeight / 2,
-                               0.f, 0.f, 1.f, 0.f,
-                               0.f, 0.f, 0.f, 1.f};
-//        auto test1 = m_camera * t->GetVertexes().at(0);
-//        auto test2 = m_proj * test1;
-//        auto test3 = m_viewport * test2;
-
-
+void Scene::Render() {
+    for (auto &t: triangles_) {
         Triangle triangle_2d{};
         for (int i = 0; i < 3; ++i) {
-            auto vertex = m_viewport * m_proj * m_camera * t->GetVertexes().at(i);
+            t->SetVertexes(i, camera_->GetModelMat() * t->GetVertexes().at(i)); // model transform
+
+            auto vertex = GetViewportMat() * camera_->GetProjMat() * camera_->GetCameraMat() * t->GetVertexes().at(i);
             for (int j = 0; j < 4; ++j) { // 将齐次坐标的w值化为1
                 vertex.SetData(j, 0, vertex.GetData().at(j).at(0) / vertex.GetW());
             }
@@ -59,15 +71,30 @@ void Scene::Render(std::vector<std::vector<Vector3f>> &frame_buffer) {
                                                                      vertexes);
                     float z_interp = alpha * vertexes.at(0).GetZ() + beta * vertexes.at(1).GetZ() +
                                      gamma * vertexes.at(2).GetZ();
-                    int pixel_index = x * kWidth + y;
+                    int pixel_index = x * width_ + y;
                     if (z_interp > z_buffer.at(pixel_index)) {
                         z_buffer.at(pixel_index) = z_interp;
-                        frame_buffer.at(y).at(x) = {0.5f, 0.2f, 0.2f};
+                        frame_buffer_.at(y).at(x) = {0.5f, 0.2f, 0.2f};
                     }
                 }
             }
         }
     }
+}
+
+void Scene::SetCamera(Camera *camera) {
+    camera_ = camera;
+}
+
+const std::vector<std::vector<Vector3f>> &Scene::GetFrameBuffer() const {
+    return frame_buffer_;
+}
+
+Matrix4f Scene::GetViewportMat() const {
+    return {(float) width_ / 2, 0.f, 0.f, (float) width_ / 2,
+            0.f, (float) height_ / 2, 0.f, (float) height_ / 2,
+            0.f, 0.f, 1.f, 0.f,
+            0.f, 0.f, 0.f, 1.f};
 }
 
 bool IsInTriangle(float x, float y, const std::array<Vector4f, 3> &vertexes) {

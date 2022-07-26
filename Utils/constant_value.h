@@ -5,8 +5,7 @@
 #ifndef RAYTRACER_CONSTANT_VALUE_H
 #define RAYTRACER_CONSTANT_VALUE_H
 
-const int kWidth = 600;
-const int kHeight = 600;
+
 const int kSamplesPerPixel = 500;
 const int kDepth = 10;
 const int kLeafTriNum = 8; // BVH数叶子节点所包含的最多的三角形的数量
