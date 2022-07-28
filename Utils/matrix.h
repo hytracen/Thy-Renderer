@@ -54,9 +54,21 @@ public:
     }
 
     T GetLen() {
+        static_assert(m >= 1 && n == 1);
         T sum = 0;
-        std::for_each(data_.begin(), data_.end(), [&sum](const T &v) { sum += v * v; });
+        for (int i = 0; i < m; ++i) {
+            sum += data_.at(i).at(0) * data_.at(i).at(0);
+        }
         return sqrt(sum);
+    }
+
+    Matrix<T,m,1> GetNorm() {
+        Matrix<T,m,1> mat{};
+        T len = GetLen();
+        for (int i = 0; i < m; ++i) {
+            mat.SetData(i,0,data_.at(i).at(0) / len);
+        }
+        return mat;
     }
 
     T GetX() const {
@@ -99,7 +111,6 @@ public:
         data_.at(3).at(0) = val;
     }
 
-
     const std::array<std::array<T, n>, m> &GetData() const { return data_; }
 
     void SetData(int i, int j, T val) {
@@ -107,11 +118,29 @@ public:
         data_.at(i).at(j) = val;
     }
 
+    Matrix<T, 3, 1> ToVec3() {
+        assert(m == 4 && n == 1);
+        Matrix<T, 3, 1> ordinary_m{};
+        for (int i = 0; i < 3; ++i) {
+            ordinary_m.SetData(i, 0, data_.at(i).at(0));
+        }
+        return ordinary_m;
+    }
+
     Matrix<T, 4, 1> GetHomoCoordinate(int type) {
         assert(m == 3 && n == 1 && type >= 1 && type <= 2);
         Matrix<T, 4, 1> homo_m = {0.f,0.f,0.f,(T)type};
         for (int i = 0; i < 3; ++i) {
             homo_m.SetData(i, 0, data_.at(i).at(0));
+        }
+        return homo_m;
+    }
+
+    Matrix<T, 4, 1> GetNormHomo() {
+        assert(m == 4 && n == 1);
+        Matrix<T, 4, 1> homo_m = {};
+        for (int i = 0; i < 4; ++i) {
+            homo_m.SetData(i, 0, data_.at(i).at(0) / GetW());
         }
         return homo_m;
     }
@@ -130,8 +159,19 @@ using Vector4f = Matrix<float, 4, 1>;
 using Matrix4f = Matrix<float, 4, 4>; // 四阶方阵
 
 template<typename T, int m, int n>
+Matrix<T, m, n> operator+(const Matrix<T, m, n> &lm, const Matrix<T, m, n> &rm) {
+    Matrix<T, m, n> result_m{};
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            result_m.SetData(i, j, lm.GetData().at(i).at(j) + rm.GetData().at(i).at(j));
+        }
+    }
+    return result_m;
+}
+
+template<typename T, int m, int n>
 Matrix<T, m, n> operator-(const Matrix<T, m, n> &lm, const Matrix<T, m, n> &rm) {
-    Matrix<T, m, n> result_m;
+    Matrix<T, m, n> result_m{};
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j < n; ++j) {
             result_m.SetData(i, j, lm.GetData().at(i).at(j) - rm.GetData().at(i).at(j));
@@ -142,7 +182,7 @@ Matrix<T, m, n> operator-(const Matrix<T, m, n> &lm, const Matrix<T, m, n> &rm) 
 
 template<typename T, int m, int n>
 Matrix<T, m, n> operator-(const Matrix<T, m, n> &mat) {
-    Matrix<T, m, n> result_m;
+    Matrix<T, m, n> result_m{};
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j < n; ++j) {
             result_m.SetData(i, j, -mat.GetData().at(i).at(j));
@@ -153,7 +193,7 @@ Matrix<T, m, n> operator-(const Matrix<T, m, n> &mat) {
 
 template<typename T, int m, int n, int t>
 Matrix<T, m, t> operator*(const Matrix<T, m, n> &lm, const Matrix<T, n, t> &rm) {
-    Matrix<T, m, t> result_m;
+    Matrix<T, m, t> result_m{};
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j < t; ++j) {
             float ij_val = 0.f;
@@ -168,7 +208,7 @@ Matrix<T, m, t> operator*(const Matrix<T, m, n> &lm, const Matrix<T, n, t> &rm) 
 
 template<typename T, int m, int n>
 Matrix<T, m, n> operator*(const Matrix<T, m, n> &mat, T val) {
-    Matrix<T, m, n> result_m;
+    Matrix<T, m, n> result_m{};
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j < n; ++j) {
             result_m.SetData(i, j, mat.GetData().at(i).at(j) * val);
@@ -182,6 +222,11 @@ Vector<T, 3> Cross(const Vector<T, 3> &lv, const Vector<T, 3> &rv) {
     return {lv.GetY() * rv.GetZ() - lv.GetZ() * rv.GetY(),
             lv.GetZ() * rv.GetX() - lv.GetX() * rv.GetZ(),
             lv.GetX() * rv.GetY() - lv.GetY() * rv.GetX()};
+}
+
+template<typename T>
+T Dot(const Vector<T, 3> &lv, const Vector<T, 3> &rv) {
+    return lv.GetX() * rv.GetX() + lv.GetY() * rv.GetY() + lv.GetZ() * rv.GetZ();
 }
 
 //template<>

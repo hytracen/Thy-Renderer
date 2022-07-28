@@ -4,6 +4,10 @@
 
 #include "triangle.h"
 
+Triangle::Triangle(std::array<Vector4f, 3> vertexes) : vertexes_(vertexes) {
+
+}
+
 const std::array<Vector4f, 3> &Triangle::GetVertexes() const {
     return vertexes_;
 }
@@ -12,9 +16,14 @@ void Triangle::SetVertexes(const std::array<Vector4f, 3> &v) {
     vertexes_ = v;
 }
 
-void Triangle::SetVertexes(int index, Vector4f vertex) {
+void Triangle::SetVertex(int index, Vector4f vertex) {
     assert(index >= 0 && index <= 2);
     vertexes_.at(index) = vertex;
+}
+
+void Triangle::SetNormal(int index, Vector3f normal) {
+    assert(index >= 0 && index <= 2);
+    normals_.at(index) = normal;
 }
 
 std::array<float, 4> Triangle::Get2DBoundingBox() {
@@ -24,4 +33,34 @@ std::array<float, 4> Triangle::Get2DBoundingBox() {
     float y_max = std::max(vertexes_.at(0).GetY(), std::max(vertexes_.at(1).GetY(), vertexes_.at(2).GetY()));
 
     return {x_min, x_max, y_min, y_max};
+}
+
+void Triangle::MoveBy(Vector3f dir, float len) {
+    Vector3f t = dir * len;
+    Matrix4f mat = {1.f, 0.f, 0.f, t.GetX(),
+                    0.f, 1.f, 0.f, t.GetY(),
+                    0.f, 0.f, 1.f, t.GetZ(),
+                    0.f, 0.f, 0.f, 1.f};
+    for (int i : {0,1,2}) {
+        vertexes_.at(i) = (mat * vertexes_.at(i)).GetNormHomo();
+        normals_.at(i) = (mat * (normals_.at(i)).GetHomoCoordinate(0)).ToVec3();
+    }
+    for (auto &v: vertexes_) {
+        v = (mat * v).GetNormHomo();
+    }
+}
+
+void Triangle::RotateBy(Vector3f axis, float angle) {
+    float radian = angle / 180.f * (float) M_PI;
+    std::array<Vector3f, 3> vertexes_3{};
+    std::transform(vertexes_.begin(), vertexes_.end(), vertexes_3.begin(),
+                   [](const Vector4f &v) { return Vector3f{v.GetX(), v.GetY(), v.GetZ()}; });
+    for (int i : {0, 1, 2}) {
+        Vector3f v = vertexes_3.at(i);
+        v = v * cosf(radian) + Cross(axis, v) * sinf(radian) + axis * Dot(axis,v)*(1- cosf(radian));
+        vertexes_.at(i) = v.GetHomoCoordinate(1);
+        //todo:法线旋转
+        Vector3f &n = normals_.at(i);
+        n = n * cosf(radian) + Cross(axis, n) * sinf(radian) + axis * Dot(axis,n)*(1- cosf(radian));
+    }
 }

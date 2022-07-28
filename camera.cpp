@@ -1,11 +1,6 @@
 #include "camera.h"
 
-Camera::Camera(Vector3f look_from, Vector3f look_at, Vector3f up) : look_from_(look_from), look_at_(look_at), up_(up) {
-    m_model_ = {1.f, 0.f, 0.f, 0.f,
-                0.f, 1.f, 0.f, 0.f,
-                0.f, 0.f, 1.f, 0.f,
-                0.f, 0.f, 0.f, 1.f};
-}
+Camera::Camera(Vector3f look_from, Vector3f look_at, Vector3f up) : look_from_(look_from), look_at_(look_at), up_(up) {}
 
 //void Camera::SetViewport(int width, int height) {
 //    width_ = width;
@@ -18,7 +13,7 @@ void Camera::SetFrustum(float aspect_ratio, float fov, float z_f, float z_n) {
     z_f_ = z_f;
     fov_ = fov;
     aspect_ratio_ = aspect_ratio;
-    y_t_ = std::fabs(z_n_) * tanf(fov_ / 180.f * (float) M_PI);
+    y_t_ = std::fabs(z_n_) * tanf((fov_/2.f) / 180.f * (float) M_PI);
     x_r_ = y_t_ * aspect_ratio_;
     x_l_ = -x_r_;
     y_b_ = -y_t_;
@@ -33,23 +28,15 @@ void Camera::SetFrustum(float x_l, float x_r, float y_t, float y_b, float z_n, f
     z_f_ = z_f;
 }
 
-Matrix4f Camera::GetModelMat() {
-    return m_model_;
-}
-
-void Camera::SetModelMat(Matrix4f mat) {
-    m_model_ = mat;
-}
-
 Matrix4f Camera::GetCameraMat() {
     Matrix4f m_translate = {1.f, 0.f, 0.f, -look_from_.GetX(),
                             0.f, 1.f, 0.f, -look_from_.GetY(),
                             0.f, 0.f, 1.f, -look_from_.GetZ(),
                             0.f, 0.f, 0.f, 1.f};
-    Vector3f right = Cross(look_at_, up_);
+    Vector3f right = Cross(up_, -look_at_);
     Matrix4f m_rotate = {right.GetX(), right.GetY(), right.GetZ(), 0.f,
                          up_.GetX(), up_.GetY(), up_.GetZ(), 0.f,
-                         look_at_.GetX(), look_at_.GetY(), look_at_.GetZ(), 0.f,
+                         -look_at_.GetX(), -look_at_.GetY(), -look_at_.GetZ(), 0.f,
                          0.f, 0.f, 0.f, 1.f};
     return m_rotate * m_translate;
 }
@@ -61,4 +48,15 @@ Matrix4f Camera::GetProjMat() const {
             0.f, 0.f, 1.f, 0.f};
     return m;
 }
+
+Vector4f Camera::VertexShader(const Vector4f &v) {
+    return GetProjMat() * GetCameraMat() * v;
+}
+
+Vector3f Camera::FragShader(const std::array<Vector4f, 3> &vertexes) {
+    Vector3f normal = Cross((vertexes.at(1) - vertexes.at(0)).ToVec3(), (vertexes.at(2) - vertexes.at(0)).ToVec3());
+    normal = normal.GetNorm();
+    return Vector3f{1.f,1.f,1.f} * std::fabs(Dot(normal, Vector3f{0.f,0.f,1.f}));
+}
+
 

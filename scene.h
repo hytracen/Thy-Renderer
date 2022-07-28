@@ -11,6 +11,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "triangle.h"
+#include "tri_mesh.h"
 #include "camera.h"
 
 class Scene {
@@ -18,6 +19,8 @@ public:
     Scene(int width, int height);
 
     void AddTri(Triangle* triangle);
+
+    void AddTriMesh(TriMesh* tri_mesh);
 
     void Clear();
 

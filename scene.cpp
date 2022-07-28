@@ -13,6 +13,12 @@ void Scene::AddTri(Triangle *triangle) {
     triangles_.push_back(triangle);
 }
 
+void Scene::AddTriMesh(TriMesh *tri_mesh) {
+    for (auto tri: tri_mesh->GetTriList()) {
+        triangles_.push_back(tri);
+    }
+}
+
 void Scene::Clear() {
     for (int i = 0; i < height_; ++i) {
         for (int j = 0; j < width_; ++j) {
@@ -20,24 +26,17 @@ void Scene::Clear() {
             z_buffer.at(i * width_ + j) = std::numeric_limits<float>::lowest();
         }
     }
-    camera_->SetModelMat(Matrix4f::Identity());
 }
 
 void Scene::ProcessInput(const int &pressed_key) {
     float radian = 10.f / 180.f * (float) M_PI;
     switch (pressed_key) {
         case 'd': {
-            camera_->SetModelMat({cosf(radian), -sinf(radian), 0.f, 0.f,
-                                  sinf(radian), cosf(radian), 0.f, 0.f,
-                                  0.f, 0.f, 1.f, 0.f,
-                                  0.f, 0.f, 0.f, 1.f});
+
         }
             break;
         case 'a': {
-            camera_->SetModelMat({cosf(-radian), -sinf(-radian), 0.f, 0.f,
-                                  sinf(-radian), cosf(-radian), 0.f, 0.f,
-                                  0.f, 0.f, 1.f, 0.f,
-                                  0.f, 0.f, 0.f, 1.f});
+
         }
             break;
         case 27: {
@@ -50,36 +49,44 @@ void Scene::ProcessInput(const int &pressed_key) {
 }
 
 void Scene::Render() {
+    int tri_count = 0;
     for (auto &t: triangles_) {
-        Triangle triangle_2d{};
+        ++tri_count;
+        t->RotateBy({0.f, 1.f, 0.f}, 10.f);
+        Triangle triangle_viewport{};
         for (int i = 0; i < 3; ++i) {
-            t->SetVertexes(i, camera_->GetModelMat() * t->GetVertexes().at(i)); // model transform
-
-            auto vertex = GetViewportMat() * camera_->GetProjMat() * camera_->GetCameraMat() * t->GetVertexes().at(i);
-            for (int j = 0; j < 4; ++j) { // 将齐次坐标的w值化为1
-                vertex.SetData(j, 0, vertex.GetData().at(j).at(0) / vertex.GetW());
-            }
-            triangle_2d.SetVertexes(i, vertex);
+            auto vertex = camera_->VertexShader(t->GetVertexes().at(i)); // vertex processing
+            vertex = vertex.GetNormHomo(); // 齐次坐标化为1
+            vertex = GetViewportMat() * vertex;
+            triangle_viewport.SetVertex(i, vertex);
         }
 
-        auto [x_min, x_max, y_min, y_max] = triangle_2d.Get2DBoundingBox();
-        for (int x = (int) x_min; x <= (int) x_max; ++x) {
-            for (int y = (int) y_min; y <= (int) y_max; ++y) {
-                auto vertexes = triangle_2d.GetVertexes();
+        auto [x_min, x_max, y_min, y_max] = triangle_viewport.Get2DBoundingBox();
+        auto vertexes = triangle_viewport.GetVertexes();
+        for (int x = (int) x_min; x <= (int) x_max && x < width_; ++x) {
+            for (int y = (int) y_min; y <= (int) y_max && y < height_; ++y) {
                 if (IsInTriangle((float) x + 0.5f, (float) y + 0.5f, vertexes)) {
                     auto [alpha, beta, gamma] = ComputeBarycentric2D((float) x + 0.5f, (float) y + 0.5f,
                                                                      vertexes);
-                    float z_interp = alpha * vertexes.at(0).GetZ() + beta * vertexes.at(1).GetZ() +
-                                     gamma * vertexes.at(2).GetZ();
-                    int pixel_index = x * width_ + y;
+                    // todo: z值的处理 https://github.com/ssloy/tinyrenderer/wiki/Technical-difficulties:-linear-interpolation-with-perspective-deformations
+                    float z_interp = 1.0f / (alpha / vertexes.at(0).GetW() + beta / vertexes.at(1).GetW() +
+                                             gamma / vertexes.at(2).GetW());
+
+                    z_interp *= (alpha * vertexes.at(0).GetZ() / vertexes.at(0).GetW()
+                                 + beta * vertexes.at(1).GetZ() / vertexes.at(1).GetW()
+                                 + gamma * vertexes.at(2).GetZ() / vertexes.at(2).GetW());
+
+                    // todo: z值的正负
+                    int pixel_index = y * width_ + x;
                     if (z_interp > z_buffer.at(pixel_index)) {
                         z_buffer.at(pixel_index) = z_interp;
-                        frame_buffer_.at(y).at(x) = {0.5f, 0.2f, 0.2f};
+                        frame_buffer_.at(y).at(x) = camera_->FragShader(t->GetVertexes());
                     }
                 }
             }
         }
     }
+    std::cout << "triangles count:" << tri_count;
 }
 
 void Scene::SetCamera(Camera *camera) {
