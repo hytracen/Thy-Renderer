@@ -118,7 +118,7 @@ public:
         data_.at(i).at(j) = val;
     }
 
-    Matrix<T, 3, 1> ToVec3() {
+    Matrix<T, 3, 1> ToVec3() const {
         assert(m == 4 && n == 1);
         Matrix<T, 3, 1> ordinary_m{};
         for (int i = 0; i < 3; ++i) {
@@ -136,12 +136,12 @@ public:
         return homo_m;
     }
 
-    Matrix<T, 4, 1> GetNormHomo() {
+    Matrix<T, 4, 1> GetProjDiv() {
         assert(m == 4 && n == 1);
-        Matrix<T, 4, 1> homo_m = {};
-        for (int i = 0; i < 4; ++i) {
-            homo_m.SetData(i, 0, data_.at(i).at(0) / GetW());
-        }
+        Matrix<T, 4, 1> homo_m = *this;
+        homo_m.data_.at(0).at(0) /= homo_m.data_.at(3).at(0);
+        homo_m.data_.at(1).at(0) /= homo_m.data_.at(3).at(0);
+        homo_m.data_.at(2).at(0) /= homo_m.data_.at(3).at(0);
         return homo_m;
     }
 
@@ -227,6 +227,17 @@ Vector<T, 3> Cross(const Vector<T, 3> &lv, const Vector<T, 3> &rv) {
 template<typename T>
 T Dot(const Vector<T, 3> &lv, const Vector<T, 3> &rv) {
     return lv.GetX() * rv.GetX() + lv.GetY() * rv.GetY() + lv.GetZ() * rv.GetZ();
+}
+
+template<typename T, int m, int n>
+Matrix<T, m, n> WiseProduct(const Matrix<T, m, n> &lv, const Matrix<T, m, n> &rv) {
+    Matrix<T, m, n> matrix {};
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            matrix.SetData(i, j, lv.GetData().at(i).at(j) * rv.GetData().at(i).at(j));
+        }
+    }
+    return matrix;
 }
 
 //template<>

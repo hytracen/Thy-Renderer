@@ -17,9 +17,13 @@ TriMesh::TriMesh(const std::string &file_name) {
         for (int j = 0; j < 3; j++) {
             triangle->SetVertex(j, (Vector3f{mesh.Vertices[i + j].Position.X,
                                              mesh.Vertices[i + j].Position.Y,
-                                             mesh.Vertices[i + j].Position.Z} * 1.f + Vector3f{0.f, 0.f, 0.f}).GetHomoCoordinate(1));
-            triangle->SetNormal(j, Vector3f{mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y,
-                                            mesh.Vertices[i + j].Normal.Z});
+                                             mesh.Vertices[i + j].Position.Z} * 1.f
+                                    + Vector3f{0.f, 0.f, 0.f}).GetHomoCoordinate(1));
+            triangle->SetNormal(j, {mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y,
+                                    mesh.Vertices[i + j].Normal.Z});
+            triangle->SetTexCoord(j,
+                                  {mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y});
+
         }
         triangles_.push_back(triangle);
     }
@@ -30,13 +34,21 @@ const std::vector<Triangle *> &TriMesh::GetTriList() {
 }
 
 void TriMesh::RotateBy(Vector3f axis, float angle) {
-    for (auto &t : triangles_) {
+    for (auto &t: triangles_) {
         t->RotateBy(axis, angle);
     }
 }
 
 void TriMesh::MoveBy(Vector3f dir, float len) {
-    for (auto &t : triangles_) {
+    for (auto &t: triangles_) {
         t->MoveBy(dir, len);
     }
+}
+
+void TriMesh::SetTexture(const std::shared_ptr<Texture> &texture) {
+    texture_ = texture;
+}
+
+const std::shared_ptr<Texture> &TriMesh::GetTexture() const {
+    return texture_;
 }

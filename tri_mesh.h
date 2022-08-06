@@ -9,6 +9,7 @@
 
 #include "Utils/matrix.h"
 #include "Utils/OBJ_Loader.h"
+#include "texture.h"
 #include "triangle.h"
 
 class TriMesh {
@@ -21,8 +22,13 @@ public:
 
     void MoveBy(Vector3f dir, float len);
 
+    void SetTexture(const std::shared_ptr<Texture> &texture);
+
+    [[nodiscard]] const std::shared_ptr<Texture> &GetTexture() const;
+
 private:
     std::vector<Triangle *> triangles_;
+    std::shared_ptr<Texture> texture_;
 };
 
 

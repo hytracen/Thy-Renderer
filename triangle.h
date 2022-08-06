@@ -19,8 +19,17 @@ public:
     void SetVertexes(const std::array<Vector4f, 3> &v);
     void SetVertex(int index, Vector4f vertex);
     void SetNormal(int index, Vector3f normal);
+    void SetTexCoord(int index, Vector2f tex_coord);
 
     [[nodiscard]] const std::array<Vector4f, 3> &GetVertexes() const;
+
+    [[nodiscard]] const Vector4f &GetVertex(int index) const;
+
+    [[nodiscard]] const std::array<Vector3f, 3> &GetNormals() const;
+
+    [[nodiscard]] const Vector3f &GetNormal(int index) const;
+
+    const Vector2f &GetTexCoord(int index);
 
     void MoveBy(Vector3f dir, float len);
 
@@ -34,6 +43,7 @@ public:
 private:
     std::array<Vector4f, 3> vertexes_{};
     std::array<Vector3f, 3> normals_{};
+    std::array<Vector2f, 3> tex_coords_{};
 };
 
 

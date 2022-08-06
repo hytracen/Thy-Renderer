@@ -13,7 +13,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable(Renderer main.cpp gl.cpp gl.h Utils/matrix.cpp Utils/matrix.h triangle.h triangle.cpp scene.cpp scene.h
-                        camera.cpp camera.h Utils/OBJ_Loader.h tri_mesh.cpp tri_mesh.h shader.cpp shader.h)
+                        camera.cpp camera.h Utils/OBJ_Loader.h tri_mesh.cpp tri_mesh.h shader.cpp shader.h texture.cpp texture.h shader_struct.h)
 
 # 链接OpenCV库文件
 target_link_libraries(Renderer ${OpenCV_LIBS})

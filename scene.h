@@ -13,6 +13,7 @@
 #include "triangle.h"
 #include "tri_mesh.h"
 #include "camera.h"
+#include "shader_struct.h"
 
 class Scene {
 public:
@@ -28,18 +29,32 @@ public:
 
     void Render();
 
+    void Rasterize(Triangle &t_viewport, Triangle &t_view);
+
     void SetCamera(Camera* camera);
 
     [[nodiscard]] Matrix4f GetViewportMat() const;
 
-    [[nodiscard]] const std::vector<std::vector<Vector3f>> &GetFrameBuffer() const;
+    [[nodiscard]] const std::vector<Vector3f> &GetFrameBuffer() const;
+
+    void SetVertShader(const std::function<VertShaderOut(const VertShaderIn &)> &vertShader);
+
+    void SetFragShader(const std::function<Vector3f(const FragShaderIn&)> &frag_shader);
+
+private:
+
+    int GetIndex(int x, int y);
 
 private:
     int width_, height_;
     std::vector<Triangle*> triangles_;
-    std::vector<std::vector<Vector3f>> frame_buffer_;
-    std::vector<float> z_buffer;
+    std::vector<TriMesh*> tri_meshes_;
+    std::vector<Vector3f> frame_buffer_;
+    std::vector<float> z_buffer_;
+
     Camera* camera_;
+    std::function<Vector3f(const FragShaderIn&)> frag_shader_;
+    std::function<VertShaderOut(const VertShaderIn&)> vert_shader_;
 };
 
 bool IsInTriangle(float x, float y, const std::array<Vector4f, 3> &vertexes);

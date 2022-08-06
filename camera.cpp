@@ -2,10 +2,10 @@
 
 Camera::Camera(Vector3f look_from, Vector3f look_at, Vector3f up) : look_from_(look_from), look_at_(look_at), up_(up) {}
 
-//void Camera::SetViewport(int width, int height) {
-//    width_ = width;
-//    height_ = height;
-//    aspect_ratio_ = (float)width / (float)height;
+//void Camera::SetViewport(int width_, int height_) {
+//    width_ = width_;
+//    height_ = height_;
+//    aspect_ratio_ = (float)width_ / (float)height_;
 //}
 
 void Camera::SetFrustum(float aspect_ratio, float fov, float z_f, float z_n) {
@@ -56,7 +56,11 @@ Vector4f Camera::VertexShader(const Vector4f &v) {
 Vector3f Camera::FragShader(const std::array<Vector4f, 3> &vertexes) {
     Vector3f normal = Cross((vertexes.at(1) - vertexes.at(0)).ToVec3(), (vertexes.at(2) - vertexes.at(0)).ToVec3());
     normal = normal.GetNorm();
-    return Vector3f{1.f,1.f,1.f} * std::fabs(Dot(normal, Vector3f{0.f,0.f,1.f}));
+    return Vector3f{255.f,255.f,255.f} * std::fabs(Dot(normal, Vector3f{0.f,0.f,-1.f}));
+}
+
+const Vector3f &Camera::GetLookFrom() const {
+    return look_from_;
 }
 
 

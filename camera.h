@@ -5,6 +5,8 @@
 #ifndef RENDERER_CAMERA_H
 #define RENDERER_CAMERA_H
 
+#include <functional>
+
 #include "Utils/matrix.h"
 
 class Camera {
@@ -23,11 +25,14 @@ public:
 
     Vector3f FragShader(const std::array<Vector4f, 3> &vertexes);
 
+    [[nodiscard]] const Vector3f &GetLookFrom() const;
+
 private:
     float fov_{}, aspect_ratio_{};
     float z_n_{}, z_f_{}, y_t_{}, y_b_{}, x_l_{}, x_r_{}; // 截锥
     Vector3f look_from_, look_at_, up_;
     Matrix4f m_camera_{}, m_proj_{};
+
 };
 
 

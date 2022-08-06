@@ -26,6 +26,11 @@ void Triangle::SetNormal(int index, Vector3f normal) {
     normals_.at(index) = normal;
 }
 
+void Triangle::SetTexCoord(int index, Vector2f tex_coord) {
+    assert(index >= 0 && index <= 2);
+    tex_coords_.at(index) = tex_coord;
+}
+
 std::array<float, 4> Triangle::Get2DBoundingBox() {
     float x_min = std::min(vertexes_.at(0).GetX(), std::min(vertexes_.at(1).GetX(), vertexes_.at(2).GetX()));
     float x_max = std::max(vertexes_.at(0).GetX(), std::max(vertexes_.at(1).GetX(), vertexes_.at(2).GetX()));
@@ -42,11 +47,11 @@ void Triangle::MoveBy(Vector3f dir, float len) {
                     0.f, 0.f, 1.f, t.GetZ(),
                     0.f, 0.f, 0.f, 1.f};
     for (int i : {0,1,2}) {
-        vertexes_.at(i) = (mat * vertexes_.at(i)).GetNormHomo();
+        vertexes_.at(i) = (mat * vertexes_.at(i)).GetProjDiv();
         normals_.at(i) = (mat * (normals_.at(i)).GetHomoCoordinate(0)).ToVec3();
     }
     for (auto &v: vertexes_) {
-        v = (mat * v).GetNormHomo();
+        v = (mat * v).GetProjDiv();
     }
 }
 
@@ -60,7 +65,27 @@ void Triangle::RotateBy(Vector3f axis, float angle) {
         v = v * cosf(radian) + Cross(axis, v) * sinf(radian) + axis * Dot(axis,v)*(1- cosf(radian));
         vertexes_.at(i) = v.GetHomoCoordinate(1);
         //todo:法线旋转
-        Vector3f &n = normals_.at(i);
+        Vector3f n = normals_.at(i);
         n = n * cosf(radian) + Cross(axis, n) * sinf(radian) + axis * Dot(axis,n)*(1- cosf(radian));
+        normals_.at(i) = n;
     }
+}
+
+const std::array<Vector3f, 3> &Triangle::GetNormals() const {
+    return normals_;
+}
+
+const Vector2f &Triangle::GetTexCoord(int index) {
+    assert(index >= 0 && index <= 2);
+    return tex_coords_.at(index);
+}
+
+const Vector3f &Triangle::GetNormal(int index) const {
+    assert(index >= 0 && index <= 2);
+    return normals_.at(index);
+}
+
+const Vector4f &Triangle::GetVertex(int index) const {
+    assert(index >= 0 && index <= 2);
+    return vertexes_.at(index);
 }
